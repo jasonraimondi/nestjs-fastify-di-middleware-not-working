@@ -1,42 +1,51 @@
-import { Get, Injectable, Controller, MiddlewareConsumer, Module, NestModule, NestMiddleware } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Injectable,
+  MiddlewareConsumer,
+  Module,
+  NestMiddleware,
+  NestModule,
+  Res,
+} from "@nestjs/common";
+import { FastifyReply } from "fastify";
 
 @Injectable()
 export class SleepService {
-    sleep(ms = 2000) {
-        return new Promise(resolve => setTimeout(resolve, ms))
-    }
+  sleepMs(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 }
 
 @Injectable()
 export class SleepMiddleware implements NestMiddleware {
-    constructor(private readonly sleepService: SleepService) {}
+  constructor(private readonly sleepService: SleepService) {
+  }
 
-    async use(_req: any, _res: any, next: () => void) {
-        const now = Date.now();
-        console.log("start middleware")
-        await this.sleepService.sleep();
-        console.log(`${Date.now() - now}ms`)
-        console.log("done")
-        next();
-    }
+  async use(_req: any, _res: any, next: () => void) {
+    const now = Date.now();
+    console.log("i am now");
+    await this.sleepService.sleepMs(1000);
+    console.log(`i am ${Date.now() - now}ms`);
+    next();
+  }
 }
 
-
-@Controller("/")
-export class DummyController {
-    @Get("/")
-    index() {
-        console.log("i am the get")
-        return "hello world!"
-    }
+@Controller()
+class DummyController {
+  @Get("/")
+  yes(@Res() response: FastifyReply) {
+    response.send("This is it yes");
+    return;
+  }
 }
 
 @Module({
-    providers: [SleepService, SleepMiddleware],
-    controllers: [DummyController],
+  providers: [SleepService, SleepMiddleware],
+  controllers: [DummyController],
 })
 export class AppModule implements NestModule {
-    configure(consumer: MiddlewareConsumer): void {
-      consumer.apply(SleepMiddleware).forRoutes("(.*)");
-    }
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(SleepMiddleware).forRoutes("(.*)");
   }
+}
